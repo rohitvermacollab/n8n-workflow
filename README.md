@@ -21,4 +21,4 @@ Automatically reads incoming emails and prepares smart replies — so you never 
 
 💼 Need a custom automation for your business? Contact me on Fiverr.
 
-fiverr.com/rohit.../build-ai-email-automation...
+https://www.fiverr.com/rohitverma009/build-ai-email-automation-for-leads-and-replies
