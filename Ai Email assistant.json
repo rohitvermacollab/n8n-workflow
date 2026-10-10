@@ -1,0 +1,536 @@
+{
+  "name": "Ai Email assistant.",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2.2,
+      "position": [
+        -480,
+        0
+      ],
+      "id": "910d9f78-d2a4-4d7a-b2bc-0ee34d85b005",
+      "name": "Email Trigger (IMAP)",
+      "credentials": {
+        "imap": {
+          "id": "iKhHKCfZkvI7k8Fv",
+          "name": "IMAP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You sort emails for a small dental clinic's front desk.\n\nRead the email below and reply with ONLY ONE WORD from this list:\n\nAPPOINTMENT - wants to book, change or cancel a visit\nINSURANCE - asks about insurance or coverage\nBILLING - asks about a bill, payment or cost\nQUESTION - any other question from a patient (hours, services, location, new patient info)\nEMERGENCY - pain, swelling, bleeding, broken tooth, urgent\nIgnore - spam, newsletters, ads, sales emails, or anything not from a patient\n\nReply with just the one word. No explanation.\n\nFrom: {{ $('Email Trigger (IMAP)').item.json.from }}\nSubject: {{ $('Email Trigger (IMAP)').item.json.subject }}\nMessage: {{ $('Email Trigger (IMAP)').item.json.textPlain }}\n\nIf the email asks to book or change a visit, always choose APPOINTMENT, even if it has other questions too.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -48,
+        -16
+      ],
+      "id": "bab19b1a-3f98-45cd-a399-5dbe82798e36",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        144
+      ],
+      "id": "c39df54c-0c6d-484f-8cf4-89ab798ebee0",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "X6Vab1ftfmUrJnb3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1u3QLFc-UrTMD6zvwMO_50kQtDnh8HKDMt5_dZU-9ljQ",
+          "mode": "list",
+          "cachedResultName": "Email lead.",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1u3QLFc-UrTMD6zvwMO_50kQtDnh8HKDMt5_dZU-9ljQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 902091823,
+          "mode": "list",
+          "cachedResultName": "Dental demo. ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1u3QLFc-UrTMD6zvwMO_50kQtDnh8HKDMt5_dZU-9ljQ/edit#gid=902091823"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "From": "={{ $('Email Trigger (IMAP)').item.json.from }}",
+            "category": "={{ $json.text }}",
+            "Subject": "={{ $('Email Trigger (IMAP)').item.json.subject }}",
+            "Date": "={{ $now.setZone('America/Chicago').format('yyyy-MM-dd HH:mm') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "From",
+              "displayName": "From",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        -16
+      ],
+      "id": "cc7f750c-b123-47f3-9b00-c159f95bdda0",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleApi": {
+          "id": "vo1xiHJZF0tnoeSQ",
+          "name": "Google Service Account account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aacf279a-0970-4851-8fce-ac3a6d43d75f",
+              "leftValue": "={{ $('Basic LLM Chain').item.json.text.trim() }}",
+              "rightValue": "Ignore",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        544,
+        -16
+      ],
+      "id": "937540e8-9cc0-4d6c-a296-60a2728e7101",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are the front desk assistant for Bright Smile Dental, a small family dental clinic in Austin, Texas.\n\nYour job: write a short, friendly reply to the patient email below. A staff member will review it before sending.\n\nCLINIC INFO:\n- Hours: Mon-Fri 8am-5pm, Sat 9am-1pm, closed Sunday\n- Phone: (512) 555-0147\n- Insurance we accept: Delta Dental, Cigna, Aetna, MetLife, Guardian\n- Insurance we do NOT accept: Medicaid\n- Services: cleanings, fillings, crowns, whitening, kids dentistry, emergency visits\n- New patients: please arrive 15 minutes early and bring a photo ID, your insurance card, and a list of any medications\n\nRULES:\n- Never confirm an exact appointment time. Say \"we'll check the schedule and confirm a time with you\".\n- Never give medical advice. For pain or emergencies, ask them to call the office.\n- If you don't know something, say \"our team will get back to you on that\". Never make things up.\n- Keep it under 120 words. Warm and simple tone.\n- Sign off as: \"Bright Smile Dental Front Desk\"\n\nPATIENT EMAIL:\nFrom: {{ $('Email Trigger (IMAP)').item.json.from }}\nSubject: {{ $('Email Trigger (IMAP)').item.json.subject }}\nMessage: {{ $('Email Trigger (IMAP)').item.json.textPlain }}\n\n- Write ONLY the email body. Do not include a subject line."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        768,
+        -128
+      ],
+      "id": "133c9311-ed42-470d-bc37-9fa0d6e13f5b",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "X6Vab1ftfmUrJnb3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "3408c1dc-67e5-46bc-8c87-27540f7e761c",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "784e71fd-df99-4101-8086-d3c848dd2f6d",
+              "name": "content.parts[0].text",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1136,
+        -160
+      ],
+      "id": "461af280-c796-46a3-aaaa-206077d75b0d",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re: {{ $('Email Trigger (IMAP)').item.json.subject }}",
+        "message": "={{ $json.content.parts[0].text }}",
+        "options": {
+          "sendTo": "={{ $('Append row in sheet').item.json.From }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        -160
+      ],
+      "id": "26c99c06-5e8a-4a61-819b-0f6b588740cb",
+      "name": "Create a draft",
+      "webhookId": "d9eabdb3-b900-45ce-9953-b10b1da8c77f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "vedbll0aH1KVVqe2",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Email Trigger (IMAP)": [
+      {
+        "json": {
+          "textHtml": "<!DOCTYPE html><html xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" lang=\"en\" style=\"box-sizing: border-box;\"><head>\r\n    <title></title>\r\n    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>\r\n    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"/><!--[if mso]><xml>\r\n      <o:OfficeDocumentSettings>\r\n        <o:PixelsPerInch>96</o:PixelsPerInch>\r\n        <o:AllowPNG />\r\n      </o:OfficeDocumentSettings>\r\n    </xml><![endif]--><!--[if !mso]><!-->\r\n    <link href=\"https://fonts.googleapis.com/css?family=Open+Sans\" rel=\"stylesheet\" type=\"text/css\"/>\r\n    <link href=\"https://fonts.googleapis.com/css?family=Ubuntu\" rel=\"stylesheet\" type=\"text/css\"/>\r\n    <link href=\"https://fonts.googleapis.com/css?family=Lato\" rel=\"stylesheet\" type=\"text/css\"/><!--<![endif]--><style>\r\n@media (max-width:620px) {\r\n  .row-content {\r\n    width: 100% !important;\r\n  }\r\n\r\n  .mobile_hide {\r\n    display: none;\r\n  }\r\n\r\n  .stack .column {\r\n    width: 100%;\r\n    display: block;\r\n  }\r\n\r\n  .mobile_hide {\r\n    min-height: 0;\r\n    max-height: 0;\r\n    max-width: 0;\r\n    overflow: hidden;\r\n    font-size: 0;\r\n  }\r\n\r\n  .desktop_hide,\r\n.desktop_hide table {\r\n    display: table !important;\r\n    max-height: none !important;\r\n  }\r\n}\r\n</style>\r\n  </head>\r\n  <body style=\"box-sizing: border-box; background-color: #f7f9fb; margin: 0; padding: 0; -webkit-text-size-adjust: none; text-size-adjust: none;\"><div style=\"display: none\">A user (verma980099@gmail.com) on your team just linked a new mailbox (verma980099@gmail.com).\r\n  If this change was unexpected, you can reset it as a team admin or contact support.  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ </div>\r\n    <table class=\"nl-container\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; background-color: #f7f9fb;\" bgcolor=\"#f7f9fb\">\r\n      <tbody style=\"box-sizing: border-box;\">\r\n        <tr style=\"box-sizing: border-box;\">\r\n          <td style=\"box-sizing: border-box;\">\r\n            <table class=\"row row-1\" align=\"center\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n              <tbody style=\"box-sizing: border-box;\">\r\n                <tr style=\"box-sizing: border-box;\">\r\n                  <td style=\"box-sizing: border-box;\">\r\n                    <table class=\"row-content stack\" align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; color: #000; width: 600px;\" width=\"600\">\r\n                      <tbody style=\"box-sizing: border-box;\">\r\n                        <tr style=\"box-sizing: border-box;\">\r\n                          <td class=\"column column-1\" width=\"100%\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; font-weight: 400; text-align: left; vertical-align: top; padding-top: 20px; padding-bottom: 20px; border-top: 0; border-right: 0; border-bottom: 0; border-left: 0;\" align=\"left\" valign=\"top\">\r\n                            <table class=\"image_block block-1\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n                              <tbody><tr style=\"box-sizing: border-box;\">\r\n                                <td class=\"pad\" style=\"box-sizing: border-box; width: 100%; padding-right: 0; padding-left: 0;\" width=\"100%\">\r\n                                  <div class=\"alignment\" align=\"center\" style=\"box-sizing: border-box; line-height: 10px;\"><a href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6IlJPdkdCUVVBQWFFVm9faGhoWnpJSm5fLWdNTHZ6UT09IiwiaHJlZiI6Imh0dHBzOi8vd3d3LmFwb2xsby5pby8_dXRtX2NhbXBhaWduPU1haWxib3grTGlua2VkXHUwMDI2dXRtX2NvbnRlbnQ9TWFpbGJveCtMaW5rZWRcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8iLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjMzMjR9/3cac9d194385d581ce0f99c3cf20d7dc3b56cb24552c28d361e777104310eac8\" style=\"box-sizing: border-box; outline: none;\" tabindex=\"-1\" target=\"_blank\"><img src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/1747678571542_logo_202505_01JVMW5B6KDMFR5D5SNS5MFTB7.png\" style=\"box-sizing: border-box; display: block; height: auto; border: 0; width: 150px; max-width: 100%;\" width=\"150\" alt=\"Apollo\" title=\"Apollo\" height=\"auto\"/></a></div>\r\n                                </td>\r\n                              </tr>\r\n                            </tbody></table>\r\n                          </td>\r\n                        </tr>\r\n                      </tbody>\r\n                    </table>\r\n                  </td>\r\n                </tr>\r\n              </tbody>\r\n            </table>\r\n            <table class=\"row row-2\" align=\"center\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n              <tbody style=\"box-sizing: border-box;\">\r\n                <tr style=\"box-sizing: border-box;\">\r\n                  <td style=\"box-sizing: border-box;\">\r\n                    <table class=\"row-content stack\" align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; background-color: #fff; color: #000; width: 600px;\" width=\"600\" bgcolor=\"#fff\">\r\n                      <tbody style=\"box-sizing: border-box;\">\r\n                        <tr style=\"box-sizing: border-box;\">\r\n                          <td class=\"column column-1\" width=\"100%\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; font-weight: 400; text-align: left; padding-left: 40px; padding-right: 40px; vertical-align: top; padding-top: 20px; padding-bottom: 0; border-top: 0; border-right: 0; border-bottom: 0; border-left: 0;\" align=\"left\" valign=\"top\">\r\n                            <table class=\"text_block block-1\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; word-break: break-word;\">\r\n                              <tbody><tr style=\"box-sizing: border-box;\">\r\n                                <td class=\"pad\" style=\"box-sizing: border-box; padding-bottom: 30px; padding-left: 20px; padding-right: 20px; padding-top: 10px;\">\r\n                                  <div style=\"box-sizing: border-box; font-family: sans-serif;\">\r\n                                    <div class=\"\" style=\"box-sizing: border-box; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; font-size: 12px; mso-line-height-alt: 14.399999999999999px; color: #354053; line-height: 1.2;\">\r\n                                      <p style=\"box-sizing: border-box; line-height: inherit; margin: 0; font-size: 14px; text-align: center; mso-line-height-alt: 16.8px;\">\r\n                                        <span style=\"box-sizing: border-box; font-size: 28px;\"><strong style=\"box-sizing: border-box;\">Mailbox Linked</strong></span>\r\n                                      </p>\r\n                                    </div>\r\n                                  </div>\r\n                                </td>\r\n                              </tr>\r\n                            </tbody></table>\r\n                          </td>\r\n                        </tr>\r\n                      </tbody>\r\n                    </table>\r\n                  </td>\r\n                </tr>\r\n              </tbody>\r\n            </table>\r\n            <table class=\"row row-3\" align=\"center\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n              <tbody style=\"box-sizing: border-box;\">\r\n                <tr style=\"box-sizing: border-box;\">\r\n                  <td style=\"box-sizing: border-box;\">\r\n                    <table class=\"row-content stack\" align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; background-color: #fff; color: #333; width: 600px;\" width=\"600\" bgcolor=\"#fff\">\r\n                      <tbody style=\"box-sizing: border-box;\">\r\n                        <tr style=\"box-sizing: border-box;\">\r\n                          <td class=\"column column-1\" width=\"100%\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; font-weight: 400; text-align: left; padding-left: 40px; padding-right: 40px; vertical-align: top; padding-top: 0; padding-bottom: 20px; border-top: 0; border-right: 0; border-bottom: 0; border-left: 0;\" align=\"left\" valign=\"top\">\r\n                            <table class=\"text_block block-1\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; word-break: break-word;\">\r\n                              <tbody><tr style=\"box-sizing: border-box;\">\r\n                                <td class=\"pad\" style=\"box-sizing: border-box; padding-bottom: 25px; padding-left: 10px; padding-right: 10px; padding-top: 10px;\">\r\n                                  <div style=\"box-sizing: border-box; font-family: sans-serif;\">\r\n                                    <div class=\"\" style=\"box-sizing: border-box; font-size: 14px; font-family: 'Helvetica Neue',Helvetica,Arial,sans-serif; mso-line-height-alt: 16.8px; color: #354053; line-height: 1.2;\">\r\n                                      <p style=\"box-sizing: border-box; line-height: inherit; margin: 0; mso-line-height-alt: 16.8px;\">\r\n                                        <span style=\"box-sizing: border-box; font-size: 15px;\">\r\n  A user (verma980099@gmail.com) on your team just linked a new mailbox (verma980099@gmail.com).\r\n  If this change was unexpected, you can reset it as a team admin or contact support: \r\n</span>\r\n                                        <a href=\"support@apollo.io?utm_campaign=Mailbox+Linked&amp;utm_content=Mailbox+Linked&amp;utm_medium=email&amp;utm_source=cio\" style=\"box-sizing: border-box;\" target=\"_blank\">\r\n                                          support@apollo.io\r\n                                        </a>\r\n\r\n                      </p></div></div></td></tr></tbody></table></td></tr></tbody>\r\n                    </table>\r\n                  </td>\r\n                </tr>\r\n              </tbody>\r\n            </table>\r\n             <table class=\"row row-6\" align=\"center\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n              <tbody style=\"box-sizing: border-box;\">\r\n                <tr style=\"box-sizing: border-box;\">\r\n                  <td style=\"box-sizing: border-box;\">\r\n                    <table class=\"row-content stack\" align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; background-color: #fff; border-radius: 0; color: #000; width: 600px; margin: 0 auto;\" width=\"600\" bgcolor=\"#fff\">\r\n                      <tbody style=\"box-sizing: border-box;\">\r\n                        <tr style=\"box-sizing: border-box;\">\r\n                          <td class=\"column column-1\" width=\"100%\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; font-weight: 400; text-align: left; padding-bottom: 20px; padding-left: 40px; padding-right: 40px; padding-top: 20px; vertical-align: top; border-top: 0; border-right: 0; border-bottom: 0; border-left: 0;\" align=\"left\" valign=\"top\">\r\n                            <table class=\"divider_block block-1\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n                              <tbody><tr style=\"box-sizing: border-box;\">\r\n                                <td class=\"pad\" style=\"box-sizing: border-box; padding-bottom: 15px;\">\r\n                                  <div class=\"alignment\" align=\"center\" style=\"box-sizing: border-box;\">\r\n                                    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" width=\"100%\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n                                      <tbody><tr style=\"box-sizing: border-box;\">\r\n                                        <td class=\"divider_inner\" style=\"box-sizing: border-box; font-size: 1px; line-height: 1px; border-top: 1px solid #bbb;\"><span style=\"box-sizing: border-box; word-break: break-word;\"> </span></td>\r\n                                      </tr>\r\n                                    </tbody></table>\r\n                                  </div>\r\n                                </td>\r\n                              </tr>\r\n                            </tbody></table>\r\n                          </td>\r\n                        </tr>\r\n                      </tbody>\r\n                    </table>\r\n                  </td>\r\n                </tr>\r\n              </tbody>\r\n            </table>\r\n            <table class=\"row row-7\" align=\"center\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0;\">\r\n              <tbody style=\"box-sizing: border-box;\">\r\n                <tr style=\"box-sizing: border-box;\">\r\n                  <td style=\"box-sizing: border-box;\">\r\n                    <table class=\"row-content stack\" align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; background-color: #fff; border-radius: 0; color: #000; width: 600px; margin: 0 auto;\" width=\"600\" bgcolor=\"#fff\">\r\n                      <tbody style=\"box-sizing: border-box;\">\r\n                        <tr style=\"box-sizing: border-box;\">\r\n                          <td class=\"column column-1\" width=\"100%\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; font-weight: 400; text-align: left; padding-bottom: 20px; padding-left: 40px; padding-right: 40px; padding-top: 5px; vertical-align: top; border-top: 0; border-right: 0; border-bottom: 0; border-left: 0;\" align=\"left\" valign=\"top\">\r\n                            <table class=\"text_block block-1\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; word-break: break-word;\">\r\n                              <tbody><tr style=\"box-sizing: border-box;\">\r\n                                <td class=\"pad\" style=\"box-sizing: border-box;\">\r\n                                  <div style=\"box-sizing: border-box; font-family: sans-serif;\">\r\n                                    <div class=\"\" style=\"box-sizing: border-box; font-size: 14px; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif; mso-line-height-alt: 16.8px; color: #555; line-height: 1.2;\">\r\n                                      <p style=\"box-sizing: border-box; line-height: inherit; margin: 0; font-size: 14px; mso-line-height-alt: 16.8px;\">\r\n                                        <span style=\"box-sizing: border-box; word-break: break-word; font-size: 12px;\">Please don’t reply to this email. We’ve sent it from a notification-only address that can’t accept replies. If you need any help, contact us directly at <a class=\"\" href=\"mailto:support@apollo.io?utm_campaign=Mailbox+Linked&amp;utm_content=Mailbox+Linked&amp;utm_medium=email&amp;utm_source=cio\" rel=\"noopener\" style=\"box-sizing: border-box; text-decoration: underline; color: #0852c2;\" target=\"_blank\" title=\"support@apollo.io\">support@apollo.io</a>.</span><br style=\"box-sizing: border-box;\"/><br style=\"box-sizing: border-box;\"/>\r\n                                      </p>\r\n                                    </div>\r\n                                  </div>\r\n                                </td>\r\n                              </tr>\r\n                            </tbody></table>\r\n                  \r\n                            <table class=\"text_block block-3\" width=\"100%\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"box-sizing: border-box; mso-table-lspace: 0; mso-table-rspace: 0; word-break: break-word;\">\r\n                              <tbody><tr style=\"box-sizing: border-box;\">\r\n                                <td class=\"pad\" style=\"box-sizing: border-box;\">\r\n                                  <div style=\"box-sizing: border-box; font-family: sans-serif;\">\r\n                                    <div class=\"\" style=\"box-sizing: border-box; font-size: 12px; font-family: Arial,'Helvetica Neue',Helvetica,sans-serif; mso-line-height-alt: 14.399999999999999px; color: #555; line-height: 1.2;\">\r\n                                      <p style=\"box-sizing: border-box; line-height: inherit; margin: 0; font-size: 12px; mso-line-height-alt: 14.399999999999999px;\">©2026 Apollo.io. All rights reserved. 535 Mission St. San Francisco, CA 94115</p>\r\n                                    </div>\r\n                                  </div>\r\n                                </td>\r\n                              </tr>\r\n                            </tbody></table>\r\n                          </td>\r\n                        </tr>\r\n                      </tbody>\r\n                    </table>\r\n                  </td>\r\n                </tr>\r\n              </tbody>\r\n            </table>\r\n          </td>\r\n        </tr>\r\n      </tbody>\r\n    </table><!-- End -->\r\n<img src=\"https://mail.apollo.io/e/o/eyJlbWFpbF9pZCI6IlJPdkdCUVVBQWFFVm9faGhoWnpJSm5fLWdNTHZ6UT09In0=\" style=\"height: 1px !important; max-height: 1px !important; max-width: 1px !important; width: 1px !important; display: none !important;\" alt=\"\"/></body></html>",
+          "textPlain": "A user (verma980099@gmail.com) on your team just linked a new mailbox (verma980099@gmail.com).\r\n  If this change was unexpected, you can reset it as a team admin or contact support.\r\n\r\nApollo ( https://www.apollo.io/?utm_campaign=Mailbox+Linked&utm_content=Mailbox+Linked&utm_medium=email&utm_source=cio )\r\n\r\nMailbox Linked\r\n\r\nA user (verma980099@gmail.com) on your team just linked a new mailbox (verma980099@gmail.com).\r\nIf this change was unexpected, you can reset it as a team admin or contact support: support@apollo.io ( support@apollo.io?utm_campaign=Mailbox+Linked&utm_content=Mailbox+Linked&utm_medium=email&utm_source=cio )\r\n\r\n \r\n\r\nPlease don’t reply to this email. We’ve sent it from a notification-only address that can’t accept replies. If you need any help, contact us directly at support@apollo.io ( support@apollo.io?utm_campaign=Mailbox+Linked&utm_content=Mailbox+Linked&utm_medium=email&utm_source=cio ).\r\n\r\n©2026 Apollo.io. All rights reserved. 535 Mission St. San Francisco, CA 94115",
+          "metadata": {
+            "delivered-to": "verma980099@gmail.com",
+            "received": "by 2002:a05:7000:3306:b0:8b4:9add:1d37 with SMTP id f6csp6041425mag; Wed, 7 Oct 2026 02:14:05 -0700 (PDT)",
+            "x-received": "by 2002:a05:7301:618d:20b0:351:1230:e379 with SMTP id 5a478bee46e88-3515dd04fbdmr1742370eec.6.1791364445600; Wed, 07 Oct 2026 02:14:05 -0700 (PDT)",
+            "arc-seal": "i=1; a=rsa-sha256; t=1791364445; cv=none; d=google.com; s=arc-20260327; b=mqOTa04lAoSVGKFoJtbuAAjFUkgHCbW3V+KISai1yFgS2FMwm58XwGv/SE0d4B1bTI 1GuZfrqYyzXeF62W6eVJnO/bBOwpHZQEndb/dJjiyU0lqycybVoKT9gpyVmpfB28RJhK VM50CqsrnTfZprdvdracyfiZjr2aLQMch4GVZ7Pj+/BPyA2wlNcJ6DXN/90x1lysWGf1 Fg59CVzMthsf2YztZQho8C2YDR4rotXTAt0v2B5olQkZem6XsxmyoZhp6SDfKarZSsl5 5QtkDlEWoNGp/K4fnJUxpiPmksCVARyyvP9cvAkR2vsMTw48/c+rWe8/zEjO86Pbrd5I MX/Q==",
+            "arc-message-signature": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327; h=message-id:to:from:subject:mime-version:date:dkim-signature :dkim-signature; bh=GypZvnyGsgJPKUzMFU4ofZ37DHI1iVruixTOO2YkZPg=; fh=tCd68d1mes2j+lyHFBl2jNEDPHo8uIvTIZZp6C6/LIU=; b=btkpIf1DFtunQeq/DewLk9NdsTsD3KB/2i/XShlXGx3uaErsXcNKVIx+whuc5R5WiI TgskhgSCshTnGiz+9rkjMUlAUg+MT2T5Y3auy7PAjYLDtxWNUyi05a5FeQssqNVOJk2c irVwRDgXdmlJA3NoXCaxwS5z3mzcOJ1P+ITUNYU6mhR/N1XjpBCgL5uB6Q5eHmLpXIQL uvSIgVvkJphdUGKY/Y+QR+mUh00yKvJiTOVcDeYaUeR73743aWEBYSjd0MVaGLPMu5Yl dLKE/wVUqTIYo9oMSiY6f+aKJgG2xy9t2F3Nfkw2+xACBd4hwiN/CMvc5hnYZpVOauZO hhog==; dara=google.com",
+            "arc-authentication-results": "i=1; mx.google.com; dkim=pass header.i=@cio54818.apollo.io header.s=pic header.b=FUHsI7fe; dkim=pass header.i=@mailgun.org header.s=mg header.b=ZKm26Mw4; spf=pass (google.com: domain of postmaster@cio54818.apollo.io designates 159.112.243.135 as permitted sender) smtp.mailfrom=postmaster@cio54818.apollo.io; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=apollo.io",
+            "return-path": "<postmaster@cio54818.apollo.io>",
+            "received-spf": "pass (google.com: domain of postmaster@cio54818.apollo.io designates 159.112.243.135 as permitted sender) client-ip=159.112.243.135;",
+            "authentication-results": "mx.google.com; dkim=pass header.i=@cio54818.apollo.io header.s=pic header.b=FUHsI7fe; dkim=pass header.i=@mailgun.org header.s=mg header.b=ZKm26Mw4; spf=pass (google.com: domain of postmaster@cio54818.apollo.io designates 159.112.243.135 as permitted sender) smtp.mailfrom=postmaster@cio54818.apollo.io; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=apollo.io",
+            "dkim-signature": "a=rsa-sha256; v=1; c=relaxed/relaxed; d=cio54818.apollo.io; q=dns/txt; s=pic; t=1791364432; x=1791371632; h=Message-Id: To: To: From: From: Subject: Subject: Content-Type: Mime-Version: Date: X-Feedback-Id: Sender; bh=GypZvnyGsgJPKUzMFU4ofZ37DHI1iVruixTOO2YkZPg=; b=FUHsI7feJsbY2loNTcyy39OkkpGHgtJ8Lr1iFaRuZaciUV0gDqERLUHN3bz3U61kpsp+RBdJmuPgTVzFiEAlF4EX6OUPb6ojwJlA5M4Qp4N/lfVdJMgs355TJxHoirVXYYFTQL3i1vZjY175vvKGpYH6fGCPXQl7WrteLcRf5no=",
+            "x-mailgun-sid": "WyI4N2NmMSIsInZlcm1hOTgwMDk5QGdtYWlsLmNvbSIsIjk3ZWJlOCJd",
+            "x-feedback-id": "postmaster@cio54818.apollo.io::5e545c8f2386d8e36594704b:mailgun",
+            "x-mailgun-sending-ip": "159.112.243.135",
+            "mime-version": "1.0",
+            "content-type": "multipart/alternative; boundary=\"4f6d844322aed48ce628be1e9861b64c55b7c2b16179bdc2cc3312b5a002\"",
+            "x-mailgun-native-send": "true",
+            "x-mailgun-track-clicks": "false",
+            "x-mailgun-track-opens": "false",
+            "x-mailgun-dkim": "true",
+            "x-report-abuse-to": "badactor@customer.io",
+            "x-mailer": "Customer.io (ROvGBQUAAaEVo_hhhZzIJn_-gMLvzQ==; +https://whatis.customeriomail.com)",
+            "x-mailgun-variables": "{\"email_id\": \"ROvGBQUAAaEVo_hhhZzIJn_-gMLvzQ==\"}",
+            "message-id": "<20261007091352.d3e5069964ece831@cio54818.apollo.io>"
+          },
+          "attributes": {
+            "uid": 6648
+          },
+          "date": "Wed, 07 Oct 2026 09:13:52 +0000",
+          "subject": "Mailbox Linked",
+          "from": "Apollo <support@apollo.io>",
+          "to": "verma980099@gmail.com"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "textHtml": "<!DOCTYPE html><html lang=\"en\" dir=\"ltr\"><head>\r\n  </head>\r\n  <body style=\"margin: 0; padding: 0; background-color: #edeee2;\" class=\"canvas\"><div style=\"display: none\">Upgrade to reach 40+ more hours of prospecting each week  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ </div>\r\n    <!-- We'll replace this content tag with whatever you write in your email  -->\r\n    \r\n\r\n\r\n<meta charset=\"utf-8\"/>\r\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"/>\r\n<meta name=\"color-scheme\" content=\"light\"/>\r\n<meta name=\"supported-color-schemes\" content=\"light\"/>\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>\r\n<meta name=\"format-detection\" content=\"telephone=no,address=no,email=no,date=no,url=no\"/>\r\n<title>Apollo</title>\r\n\r\n<!--[if mso]>\r\n<noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>\r\n<![endif]-->\r\n\r\n<style type=\"text/css\">\r\n@media (max-width:600px) {\r\n  .canvas-td {\r\n    padding: 0 !important;\r\n  }\r\n\r\n  .card-white {\r\n    border-radius: 0 !important;\r\n  }\r\n\r\n  .content-td {\r\n    padding-left: 20px !important;\r\n    padding-right: 20px !important;\r\n  }\r\n\r\n  .col-cell {\r\n    display: block !important;\r\n    width: 100% !important;\r\n    padding: 0 0 24px !important;\r\n    box-sizing: border-box !important;\r\n  }\r\n\r\n  .col-gap {\r\n    display: none !important;\r\n  }\r\n\r\n  .col-cell img {\r\n    margin-left: auto !important;\r\n    margin-right: auto !important;\r\n  }\r\n\r\n  .cta-btn {\r\n    display: block !important;\r\n    width: 100% !important;\r\n    box-sizing: border-box !important;\r\n    text-align: center !important;\r\n  }\r\n\r\n  .h-hero {\r\n    font-size: 30px !important;\r\n    line-height: 34px !important;\r\n    letter-spacing: -0.60px !important;\r\n  }\r\n\r\n  .hero-td {\r\n    padding: 36px 24px !important;\r\n  }\r\n\r\n  .h-yellow {\r\n    font-size: 24px !important;\r\n    line-height: 28px !important;\r\n  }\r\n\r\n  .h-callout {\r\n    font-size: 21px !important;\r\n    line-height: 26px !important;\r\n  }\r\n}\r\n@media (prefers-color-scheme: dark) {\r\n  body,\r\n.canvas {\r\n    background-color: #2C2D25 !important;\r\n  }\r\n\r\n  .card-white {\r\n    background-color: #202125 !important;\r\n  }\r\n\r\n  .card-neutral-light {\r\n    background-color: #2C2D25 !important;\r\n  }\r\n\r\n  .text-primary {\r\n    color: #DADBD6 !important;\r\n  }\r\n\r\n  .text-secondary {\r\n    color: #C2C2B8 !important;\r\n  }\r\n\r\n  a.text-link {\r\n    color: #DADBD6 !important;\r\n  }\r\n\r\n  .footer-link {\r\n    color: #DADBD6 !important;\r\n  }\r\n\r\n  .footer-meta {\r\n    color: #C2C2B8 !important;\r\n  }\r\n\r\n  .rule {\r\n    border-color: #464648 !important;\r\n  }\r\n\r\n  .callout-box {\r\n    border-color: #DADBD6 !important;\r\n  }\r\n\r\n  .btn-neutral {\r\n    background-color: #DADBD6 !important;\r\n  }\r\n\r\n  .btn-neutral a,\r\n.btn-neutral span {\r\n    color: #212227 !important;\r\n  }\r\n\r\n  a.btn-neutral {\r\n    background-color: #DADBD6 !important;\r\n    color: #212227 !important;\r\n  }\r\n\r\n  .btn-outline {\r\n    border-color: #DADBD6 !important;\r\n  }\r\n\r\n  .btn-outline a {\r\n    color: #DADBD6 !important;\r\n  }\r\n}\r\n[data-ogsc] a.text-link {\r\n  color: #DADBD6 !important;\r\n}\r\n[data-ogsb] a.text-link {\r\n  color: #DADBD6 !important;\r\n}\r\n</style>\r\n\r\n\r\n\r\n\r\n  <!-- Preheader -->\r\n  <div style=\"display:none; max-height:0; overflow:hidden;\">Upgrade to reach 40+ more hours of prospecting each week  ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ ͏ </div>\r\n\r\n  <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" class=\"canvas\" bgcolor=\"#edeee2\" style=\"background-color:#edeee2;\">\r\n    <tbody><tr>\r\n      <td class=\"canvas-td\" align=\"center\" style=\"padding:40px;\">\r\n\r\n        <!--[if mso]>\r\n        <table role=\"presentation\" width=\"600\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" align=\"center\">\r\n          <tr><td>\r\n        <![endif]-->\r\n\r\n        <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" class=\"card-white email-container\" bgcolor=\"#ffffff\" align=\"center\" style=\"background-color: #ffffff; border-radius: 20px; overflow: hidden; width: 100% !important; max-width: 600px !important;\">\r\n          <tbody><tr>\r\n            <td>\r\n\r\n              <!-- NAV — centered logo -->\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" bgcolor=\"#ffffff\" style=\"background-color:#ffffff;\">\r\n                <tbody><tr>\r\n                  <td style=\"padding:24px; text-align:center;\">\r\n                    <a href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vYXBwLmFwb2xsby5pby8_dXRtX2NhbXBhaWduPTIwMjUwOTEyX05VUlRfR0xCTF9GZWF0Z2F0ZV9CdWxrU2VsZWN0XHUwMDI2dXRtX2NvbnRlbnQ9MjUwOV9mMnBfZmVhdGdhdGVfYnVsa3NlbGVjdF9lbWFpbDFfbm9uLWNvcmVcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8iLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjQwMTh9/1a95d40e8078186cf112eacfe03fcd41a40b7a8a666cd06e0395215e6fea490f\" target=\"_blank\">\r\n                      <img src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS7R2WET9EZZXF4J1YH3KD31.png\" alt=\"Apollo\" width=\"120\" border=\"0\" style=\"border: 0; display: block; width: 120px; margin: 0 auto; max-width: 100% !important; height: auto !important;\" height=\"auto\"/>\r\n                    </a>\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n              <!-- HERO BANNER — full-bleed, 40px headline. Background image required. -->\r\n              <!--[if mso]>\r\n              <v:rect xmlns:v=\"urn:schemas-microsoft-com:vml\" fill=\"true\" stroke=\"false\"\r\n                style=\"width:600px; height:224px;\">\r\n                <v:fill type=\"frame\" src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KTYMS9SXQEN4TRREANH39QTR.png\" color=\"#fbf500\" />\r\n                <v:textbox inset=\"40,48,40,48\">\r\n              <![endif]-->\r\n\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\" background=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KTYMS9SXQEN4TRREANH39QTR.png\" style=\"background-image:url('https://userimg-assets.customeriomail.com/images/client-env-90987/01KTYMS9SXQEN4TRREANH39QTR.png'); background-color:#fbf500; background-size:cover; background-position:center; min-height:224px;\">\r\n                <tbody><tr>\r\n                  <td class=\"hero-td\" style=\"padding:48px 40px; text-align:center; box-sizing:border-box; min-height:224px;\">\r\n                    <h1 class=\"h-hero\" style=\"font-family:Georgia,'Times New Roman',serif; font-size:40px; font-weight:400; letter-spacing:-0.80px; line-height:44px; color:#252521; text-align:center; margin:0;\">Save time and prospect faster with bulk record selection</h1>\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n              <!--[if mso]></v:textbox></v:rect><![endif]-->\r\n\r\n              <!-- BODY TEXT -->\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n                <tbody><tr>\r\n                  <td class=\"content-td\" style=\"padding: 24px 32px 0; box-sizing: border-box !important;\">\r\n                    <p class=\"text-secondary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; color:#3c3c35; line-height:24px; text-align:center; margin:0;\">Selecting 25 contacts at a time? That’s slowing you down. Upgrade to <a class=\"text-link\" href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vYXBwLmFwb2xsby5pby8_dXRtX2NhbXBhaWduPTIwMjUwOTEyX05VUlRfR0xCTF9GZWF0Z2F0ZV9CdWxrU2VsZWN0XHUwMDI2dXRtX2NvbnRlbnQ9MjUwOV9mMnBfZmVhdGdhdGVfYnVsa3NlbGVjdF9lbWFpbDFfbm9uLWNvcmVcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8jL3NldHRpbmdzL3BsYW5zL3VwZ3JhZGU_ZmFtaWx5PVVwZ3JhZGUiLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjQ4MTl9/1cd5a932089d470dbd1835535a0ffb6f64526fe0a7a0af62224395be90336c62\" style=\"color:#252521; text-decoration:underline;\" target=\"_blank\">any paid plan</a> and prospect up to 40 hours faster each week with a larger bulk selection limit <i>(up to 10,000 records at a time)</i>. You’ll also unlock other powerful advanced features:</p>\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n              <!-- DIVIDER -->\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n                <tbody><tr>\r\n                  <td style=\"padding:28px 32px 0;\">\r\n                    <div class=\"rule\" style=\"border-top:1px solid #d4d5c8; line-height:0;\"> </div>\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n              <!-- ICON LIST -->\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n                <tbody><tr>\r\n                  <td class=\"content-td\" style=\"padding: 28px 32px 0; box-sizing: border-box !important;\">\r\n                    <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n\r\n                      <tbody><tr>\r\n                        <td valign=\"top\" style=\"vertical-align:top; width:40px; padding:0 14px 0 0;\">\r\n                          <img class=\"icon-img\" src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS8MNCBWV5ARTG5N8BK62ZQQ.png\" alt=\"\" width=\"40\" height=\"40\" border=\"0\" style=\"border: 0; display: block; width: 40px !important; max-width: 40px !important; height: 40px !important;\"/>\r\n                        </td>\r\n                        <td class=\"icon-copy-col\" valign=\"top\" style=\"vertical-align: top; padding: 0 0 0 0; box-sizing: border-box !important;\">\r\n                          <p class=\"text-primary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500; color:#252521; line-height:24px; text-align:left; margin:0 0 4px;\">Find decision makers instantly</p>\r\n                          <p class=\"text-secondary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#3c3c35; line-height:22px; text-align:left; margin:0;\">Target buyers with precision using technologies used, revenue, funding, and job posting filters.</p>\r\n                        </td>\r\n                      </tr>\r\n\r\n                      <tr>\r\n                        <td valign=\"top\" style=\"vertical-align:top; width:40px; padding:22px 14px 0 0;\">\r\n                          <img class=\"icon-img\" src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS8SK1W239PZKCKNTSDC4GR1.png\" alt=\"\" width=\"40\" height=\"40\" border=\"0\" style=\"border: 0; display: block; width: 40px !important; max-width: 40px !important; height: 40px !important;\"/>\r\n                        </td>\r\n                        <td class=\"icon-copy-col\" valign=\"top\" style=\"vertical-align: top; padding: 22px 0 0 0; box-sizing: border-box !important;\">\r\n                          <p class=\"text-primary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500; color:#252521; line-height:24px; text-align:left; margin:0 0 4px;\">Close deals faster with Workflows</p>\r\n                          <p class=\"text-secondary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#3c3c35; line-height:22px; text-align:left; margin:0;\">Automatically add contacts to lists and sequences to reach out immediately when they show buying intent.</p>\r\n                        </td>\r\n                      </tr>\r\n\r\n                      <tr>\r\n                        <td valign=\"top\" style=\"vertical-align:top; width:40px; padding:22px 14px 0 0;\">\r\n                          <img class=\"icon-img\" src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS8T6FPP708Z2ESHJNEVCS4M.png\" alt=\"\" width=\"40\" height=\"40\" border=\"0\" style=\"border: 0; display: block; width: 40px !important; max-width: 40px !important; height: 40px !important;\"/>\r\n                        </td>\r\n                        <td class=\"icon-copy-col\" valign=\"top\" style=\"vertical-align: top; padding: 22px 0 0 0; box-sizing: border-box !important;\">\r\n                          <p class=\"text-primary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500; color:#252521; line-height:24px; text-align:left; margin:0 0 4px;\">Scale personalization with AI</p>\r\n                          <p class=\"text-secondary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#3c3c35; line-height:22px; text-align:left; margin:0;\">Reduce research time and craft highly personalized messages to prospects with AI-powered insights.</p>\r\n                        </td>\r\n                      </tr>\r\n\r\n                      <tr>\r\n                        <td valign=\"top\" style=\"vertical-align:top; width:40px; padding:22px 14px 0 0;\">\r\n                          <img class=\"icon-img\" src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KWASDV5CDKNQ412MJ5KV6X21.png\" alt=\"\" width=\"40\" height=\"40\" border=\"0\" style=\"border: 0; display: block; width: 40px !important; max-width: 40px !important; height: 40px !important;\"/>\r\n                        </td>\r\n                        <td class=\"icon-copy-col\" valign=\"top\" style=\"vertical-align: top; padding: 22px 0 0 0; box-sizing: border-box !important;\">\r\n                          <p class=\"text-primary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500; color:#252521; line-height:24px; text-align:left; margin:0 0 4px;\">Know what works</p>\r\n                          <p class=\"text-secondary\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#3c3c35; line-height:22px; text-align:left; margin:0;\">Track when prospects open and click, and run A/B tests to determine best-performing email sequences.</p>\r\n                        </td>\r\n                      </tr>\r\n\r\n                    </tbody></table>\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n              \r\n\r\n              \r\n              \r\n\r\n              \r\n\r\n              \r\n              \r\n              \r\n\r\n              \r\n              \r\n              \r\n\r\n              \r\n              \r\n              \r\n\r\n              \r\n\r\n              \r\n\r\n              \r\n\r\n              \r\n\r\n              \r\n\r\n              \r\n\r\n              <!-- CTA -->\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n                <tbody><tr>\r\n                  <td style=\"padding:32px 32px 0; text-align:center; box-sizing:border-box;\">\r\n\r\n                    <!--[if mso]>\r\n                    <v:roundrect xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:w=\"urn:schemas-microsoft-com:office:word\" href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vYXBwLmFwb2xsby5pby8_dXRtX2NhbXBhaWduPTIwMjUwOTEyX05VUlRfR0xCTF9GZWF0Z2F0ZV9CdWxrU2VsZWN0XHUwMDI2dXRtX2NvbnRlbnQ9MjUwOV9mMnBfZmVhdGdhdGVfYnVsa3NlbGVjdF9lbWFpbDFfbm9uLWNvcmVcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8jL3NldHRpbmdzL3BsYW5zL3VwZ3JhZGU_ZmFtaWx5PVVwZ3JhZGUiLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjExNDA1fQ/7adea1d8846187a02796d6c544b00871446f7ff57ebb334d9894ebdb8fbeebca\" style=\"height:52px; v-text-anchor:middle; width:230px;\" arcsize=\"46%\" strokecolor=\"#252521\" fillcolor=\"#252521\">\r\n                      <w:anchorlock/>\r\n                      <center style=\"color:#ffffff; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:16px; font-weight:500;\">See Plans & Upgrade</center>\r\n                    </v:roundrect>\r\n                    <![endif]-->\r\n\r\n                    <!--[if !mso]><!-->\r\n                    <a class=\"cta-btn btn-neutral\" href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vYXBwLmFwb2xsby5pby8_dXRtX2NhbXBhaWduPTIwMjUwOTEyX05VUlRfR0xCTF9GZWF0Z2F0ZV9CdWxrU2VsZWN0XHUwMDI2dXRtX2NvbnRlbnQ9MjUwOV9mMnBfZmVhdGdhdGVfYnVsa3NlbGVjdF9lbWFpbDFfbm9uLWNvcmVcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8jL3NldHRpbmdzL3BsYW5zL3VwZ3JhZGU_ZmFtaWx5PVVwZ3JhZGUiLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjExNDA1fQ/7adea1d8846187a02796d6c544b00871446f7ff57ebb334d9894ebdb8fbeebca\" style=\"display:inline-block; mso-hide:all; color:#ffffff;\r\n                              font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;\r\n                              font-size:16px; font-weight:500; text-decoration:none;\r\n                              background-color:#252521; border-radius:12px; padding:14px 20px;\" target=\"_blank\">See Plans &amp; Upgrade</a>\r\n                    <!--<![endif]-->\r\n\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n              <!-- SIGNATURE — The Apollo Team -->\r\n              <table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n                <tbody><tr>\r\n                  <td class=\"content-td\" style=\"padding: 32px 32px 40px; box-sizing: border-box !important;\">\r\n                    <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n                      <tbody><tr>\r\n                        <td valign=\"middle\" style=\"vertical-align:middle; width:40px; padding-right:12px;\">\r\n                          <img class=\"icon-img\" src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KSJY6VKS5TMV6YPFMRNPZN3T.png\" alt=\"Apollo\" width=\"40\" height=\"40\" border=\"0\" style=\"border: 0; display: block; width: 40px !important; max-width: 40px !important; height: 40px !important;\"/>\r\n                        </td>\r\n                        <td valign=\"middle\" style=\"vertical-align:middle;\">\r\n                          <p class=\"text-primary\" style=\"font-family:Georgia,'Times New Roman',serif; font-size:20px; font-weight:400; letter-spacing:-0.20px; line-height:24px; color:#252521; text-align:left; margin:0;\">The Apollo Team</p>\r\n                        </td>\r\n                      </tr>\r\n                    </tbody></table>\r\n                  </td>\r\n                </tr>\r\n              </tbody></table>\r\n\r\n            </td>\r\n          </tr>\r\n        </tbody></table><!-- /white card -->\r\n\r\n        <!-- Social icons: LinkedIn → X → Instagram -->\r\n<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n  <tbody><tr>\r\n    <td align=\"center\" style=\"padding: 16px 0; box-sizing:border-box;\">\r\n      <table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\r\n        <tbody><tr>\r\n          <td style=\"padding:0 8px;\">\r\n            <a href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vd3d3LmxpbmtlZGluLmNvbS9jb21wYW55L2Fwb2xsb2lvLz91dG1fY2FtcGFpZ249MjAyNTA5MTJfTlVSVF9HTEJMX0ZlYXRnYXRlX0J1bGtTZWxlY3RcdTAwMjZ1dG1fY29udGVudD0yNTA5X2YycF9mZWF0Z2F0ZV9idWxrc2VsZWN0X2VtYWlsMV9ub24tY29yZVx1MDAyNnV0bV9tZWRpdW09ZW1haWxcdTAwMjZ1dG1fc291cmNlPWNpbyIsImludGVybmFsIjoiZWJjNjA1YTIwOGFjZTUwMThkODY5MzBmIiwibGlua19pZCI6NDY5NX0/b71edc91ac5516598fdf4f1fd97525a1b7d67527941b5f12a3a0a4adba76b1a6\" style=\"text-decoration:none;\" target=\"_blank\">\r\n              <img src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS7R27V9XAYH2PA97BFTN4JJ.png\" alt=\"Apollo on LinkedIn\" width=\"40\" height=\"auto\" style=\"border: 0; display: block; width: 40px; max-width: 100% !important; height: auto !important;\"/>\r\n            </a>\r\n          </td>\r\n          <td style=\"padding:0 8px;\">\r\n            <a href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8veC5jb20vdXNlYXBvbGxvaW8_dXRtX2NhbXBhaWduPTIwMjUwOTEyX05VUlRfR0xCTF9GZWF0Z2F0ZV9CdWxrU2VsZWN0XHUwMDI2dXRtX2NvbnRlbnQ9MjUwOV9mMnBfZmVhdGdhdGVfYnVsa3NlbGVjdF9lbWFpbDFfbm9uLWNvcmVcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8iLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjkzMTZ9/fe3545709e9553851971998d17ced8b198da8900d38f4c1f6d4eda654e7992d9\" style=\"text-decoration:none;\" target=\"_blank\">\r\n              <img src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS7R27VD3972FRC0MSAZMJYN.png\" alt=\"Apollo on X\" width=\"40\" height=\"auto\" style=\"border: 0; display: block; width: 40px; max-width: 100% !important; height: auto !important;\"/>\r\n            </a>\r\n          </td>\r\n          <td style=\"padding:0 8px;\">\r\n            <a href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vd3d3Lmluc3RhZ3JhbS5jb20vdXNlYXBvbGxvLmlvLz91dG1fY2FtcGFpZ249MjAyNTA5MTJfTlVSVF9HTEJMX0ZlYXRnYXRlX0J1bGtTZWxlY3RcdTAwMjZ1dG1fY29udGVudD0yNTA5X2YycF9mZWF0Z2F0ZV9idWxrc2VsZWN0X2VtYWlsMV9ub24tY29yZVx1MDAyNnV0bV9tZWRpdW09ZW1haWxcdTAwMjZ1dG1fc291cmNlPWNpbyIsImludGVybmFsIjoiZWJjNjA1YTIwOGFjZTUwMThkODY5MzBmIiwibGlua19pZCI6NjcwNn0/094f1f1cf2d42edfe164dfb37494eebc6b90ecd8c54a96694cd3f05ffc7b54cd\" style=\"text-decoration:none;\" target=\"_blank\">\r\n              <img src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS7R27V9CH1YXNPDHVSBGA51.png\" alt=\"Apollo on Instagram\" width=\"40\" height=\"auto\" style=\"border: 0; display: block; width: 40px; max-width: 100% !important; height: auto !important;\"/>\r\n            </a>\r\n          </td>\r\n        </tr>\r\n      </tbody></table>\r\n    </td>\r\n  </tr>\r\n</tbody></table>\r\n<p style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; line-height:1.8; margin:0 0 4px; text-align:center;\">\r\n  <a class=\"footer-link\" href=\"https://mail.apollo.io/manage_subscription_preferences/dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg==\" style=\"color:#3c3c35; text-decoration:underline;\">Manage preferences</a> |\r\n  <a class=\"footer-link\" href=\"https://mail.apollo.io/unsubscribe/dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg==\" style=\"color:#3c3c35; text-decoration:underline;\">Unsubscribe</a>\r\n</p>\r\n<p class=\"footer-meta\" style=\"font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:14px; color:#3c3c35; line-height:1.8; margin:0; text-align:center;\">\r\n  ©2026 Apollo. All rights reserved.<br/>\r\n  440 N Barranca Ave. #4750, Covina, CA 91723\r\n</p>\r\n<!-- Footer logo — neutral logo on #edeee2 background, single img -->\r\n<a href=\"https://mail.apollo.io/e/c/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09IiwiaHJlZiI6Imh0dHBzOi8vYXBwLmFwb2xsby5pby8_dXRtX2NhbXBhaWduPTIwMjUwOTEyX05VUlRfR0xCTF9GZWF0Z2F0ZV9CdWxrU2VsZWN0XHUwMDI2dXRtX2NvbnRlbnQ9MjUwOV9mMnBfZmVhdGdhdGVfYnVsa3NlbGVjdF9lbWFpbDFfbm9uLWNvcmVcdTAwMjZ1dG1fbWVkaXVtPWVtYWlsXHUwMDI2dXRtX3NvdXJjZT1jaW8iLCJpbnRlcm5hbCI6ImViYzYwNWEyMDhhY2U1MDE4ZDg2OTMwZiIsImxpbmtfaWQiOjQwMTh9/1a95d40e8078186cf112eacfe03fcd41a40b7a8a666cd06e0395215e6fea490f\" target=\"_blank\">\r\n  <img src=\"https://userimg-assets.customeriomail.com/images/client-env-90987/01KS7R2WE5SP56XPVJ6EX7NBVN.png\" alt=\"Apollo\" width=\"120\" style=\"border: 0; display: block; width: 120px; margin: 24px auto 40px; max-width: 100% !important; height: auto !important;\" height=\"auto\"/>\r\n</a>\r\n\r\n        <!--[if mso]>\r\n          </td></tr>\r\n        </table>\r\n        <![endif]-->\r\n\r\n      </td>\r\n    </tr>\r\n  </tbody></table>\r\n\r\n\r\n\r\n  \r\n<img src=\"https://mail.apollo.io/e/o/eyJlbWFpbF9pZCI6ImRnVHJ4Z1VMQUkyR2t3LU1ocE1QQWFFVjBEaG92Sk5SMUtleDUyLUhzZz09In0=\" style=\"height: 1px !important; max-height: 1px !important; max-width: 1px !important; width: 1px !important; display: none !important;\" alt=\"\"/></body></html>",
+          "textPlain": "Upgrade to reach 40+ more hours of prospecting each week\r\n\r\nApollo\r\n\r\nApollo ( https://app.apollo.io/?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio )\r\n\r\n********************************************************\r\nSave time and prospect faster with bulk record selection\r\n********************************************************\r\n\r\nSelecting 25 contacts at a time? That’s slowing you down. Upgrade to any paid plan ( https://app.apollo.io/?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio#/settings/plans/upgrade?family=Upgrade ) and prospect up to 40 hours faster each week with a larger bulk selection limit (up to 10,000 records at a time). You’ll also unlock other powerful advanced features:\r\n\r\n \r\n\r\nFind decision makers instantly\r\n\r\nTarget buyers with precision using technologies used, revenue, funding, and job posting filters.\r\n\r\nClose deals faster with Workflows\r\n\r\nAutomatically add contacts to lists and sequences to reach out immediately when they show buying intent.\r\n\r\nScale personalization with AI\r\n\r\nReduce research time and craft highly personalized messages to prospects with AI-powered insights.\r\n\r\nKnow what works\r\n\r\nTrack when prospects open and click, and run A/B tests to determine best-performing email sequences.\r\n\r\nSee Plans & Upgrade ( https://app.apollo.io/?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio#/settings/plans/upgrade?family=Upgrade )\r\n\r\nApollo\r\n\r\nThe Apollo Team\r\n\r\nApollo on LinkedIn ( https://www.linkedin.com/company/apolloio/?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio )\r\n\r\nApollo on X ( https://x.com/useapolloio?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio )\r\n\r\nApollo on Instagram ( https://www.instagram.com/useapollo.io/?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio )\r\n\r\nManage preferences ( https://track.customer.io/manage_subscription_preferences/dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg== ) |\r\nUnsubscribe ( https://track.customer.io/unsubscribe/dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg== )\r\n\r\n©2026 Apollo. All rights reserved.\r\n\r\n440 N Barranca Ave. #4750, Covina, CA 91723\r\n\r\nApollo ( https://app.apollo.io/?utm_campaign=20250912_NURT_GLBL_Featgate_BulkSelect&utm_content=2509_f2p_featgate_bulkselect_email1_non-core&utm_medium=email&utm_source=cio )",
+          "metadata": {
+            "delivered-to": "verma980099@gmail.com",
+            "received": "by 2002:a05:7000:34c5:b0:8ce:5e33:c2a9 with SMTP id a5csp6557413mag; Wed, 7 Oct 2026 03:02:15 -0700 (PDT)",
+            "x-received": "by 2002:a05:690c:d8b:b0:8ac:805b:3a6e with SMTP id 00721157ae682-8b05b0b3bcdmr14119327b3.25.1791367334626; Wed, 07 Oct 2026 03:02:14 -0700 (PDT)",
+            "arc-seal": "i=1; a=rsa-sha256; t=1791367334; cv=none; d=google.com; s=arc-20260327; b=ls2D7+lo4D2vofBr1Jua5TJBF0SDAMma/A03wyyJnUIJ/EG42u3NEXnMEMQOQME+Ec g+Mhg93OQqwv/V+wrCNQteB7FdkSE7ARI6Ohtn4WEJW+wvmwx5Oe5SLlje+w4vRRk072 3CFnkt1GL/NccF5jhfiJXG76hY0OuyLA1L66az/iwSlAdIq1skT3ueVErER7AO9cAn01 S7Y2KyCtO+mdsybFy0LzT5UqyOJjzeLyzKgBDD9xC3o/5y9LsmHRNeL/RKVQNDyXw7H+ rmaG4kJ2f+mWi4roIyW8sLDegH2LVl39j709/jZKk0avVx5auR9UttLokStEclrBTiFA 65Tw==",
+            "arc-message-signature": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327; h=message-id:list-unsubscribe-post:list-unsubscribe:to:from:subject :mime-version:date:dkim-signature:dkim-signature; bh=CmT5FziPksqYbJhMeXTSiJUHX/UqDgMMhZRWoYeB0T8=; fh=tCd68d1mes2j+lyHFBl2jNEDPHo8uIvTIZZp6C6/LIU=; b=SqPmtYz7RmdyxSUl/hA7elCXKwhfOJ/pl4GUFJYl4+vOeOVNnq9/OLIihsmzgFQs/9 HL2i3Mx+JmVTLrmhJPOeQklJhRG5rvXIJDI2wZnlx/obRhUQgbv97ccZKVuTXvp/j3qK bqxw8Cm8bc0orSdS5WNxjRvEqxJ8lC2+N8bZg0Gu0wic0G5flv4uPaDgiGFGx85M5BBj MRTWVJJ0J4sBrlUApPCQRVNXrKHUC/pR0h5/P4tc8KHF1OC2flLXjgyHUPMhhF26Hiqf cMlVKNW6Ba7WPpnd3OUo7Oc7nc4172sa3a4FxbvI7HoUJERjtQfRRUZhxwO2mZqnnaIa Ii+Q==; dara=google.com",
+            "arc-authentication-results": "i=1; mx.google.com; dkim=pass header.i=@cio54818.mail.apollo.io header.s=mx header.b=\"j/+3Yhp/\"; dkim=pass header.i=@mailgun.org header.s=mg header.b=I7Zw5YYN; spf=pass (google.com: domain of postmaster@cio54818.mail.apollo.io designates 198.244.52.92 as permitted sender) smtp.mailfrom=postmaster@cio54818.mail.apollo.io; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=apollo.io",
+            "return-path": "<postmaster@cio54818.mail.apollo.io>",
+            "received-spf": "pass (google.com: domain of postmaster@cio54818.mail.apollo.io designates 198.244.52.92 as permitted sender) client-ip=198.244.52.92;",
+            "authentication-results": "mx.google.com; dkim=pass header.i=@cio54818.mail.apollo.io header.s=mx header.b=\"j/+3Yhp/\"; dkim=pass header.i=@mailgun.org header.s=mg header.b=I7Zw5YYN; spf=pass (google.com: domain of postmaster@cio54818.mail.apollo.io designates 198.244.52.92 as permitted sender) smtp.mailfrom=postmaster@cio54818.mail.apollo.io; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=apollo.io",
+            "dkim-signature": "a=rsa-sha256; v=1; c=relaxed/relaxed; d=cio54818.mail.apollo.io; q=dns/txt; s=mx; t=1791367333; x=1791374533; h=Message-Id: List-Unsubscribe-Post: List-Unsubscribe: To: To: From: From: Subject: Subject: Content-Type: Mime-Version: Date: X-Feedback-Id: Sender; bh=CmT5FziPksqYbJhMeXTSiJUHX/UqDgMMhZRWoYeB0T8=; b=j/+3Yhp/TxHiqMgaD6udHPX/cacPeFB+HxbhKhU39fNoOOc8wA8VEGcSHeUD9KbBDdQJAovIiuw5LeI35mXxLtLQ7LUP+x/dW0NiPN+fU/bGDt/IcWhsieabr2th+jrU96uDA51LvQ5XtFQtcY+7SGY4hcfx4W02t+Hkwn3jrho=",
+            "x-mailgun-sid": "WyIzMDA2MiIsInZlcm1hOTgwMDk5QGdtYWlsLmNvbSIsIjYxNTJiYiJd",
+            "x-feedback-id": "postmaster@cio54818.mail.apollo.io::64ee5d4dff0702847d580d55:mailgun",
+            "x-mailgun-sending-ip": "198.244.52.92",
+            "mime-version": "1.0",
+            "content-type": "multipart/alternative; boundary=\"d3e915c84b72f3e202e4b1f94833219386c7b9d84383a5a516f3956a602d\"",
+            "x-mailgun-native-send": "true",
+            "x-mailgun-track-clicks": "false",
+            "x-mailgun-track-opens": "false",
+            "x-mailgun-dkim": "true",
+            "list-unsubscribe": "<mailto:32.MRTVI4TYM5KUYQKJGJDWW5ZNJVUHATKQIFQUKVRQIRUG65SKJZJDCS3FPA2TELKIONTT2PI=@unsubscribe2.customer.io>, <https://mail.apollo.io/unsubscribe/dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg==>",
+            "list-unsubscribe-post": "List-Unsubscribe=One-Click",
+            "x-mailer": "Customer.io (dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg==; +https://whatis.customeriomail.com)",
+            "x-report-abuse-to": "badactor@customer.io",
+            "x-mailgun-variables": "{\"email_id\": \"dgTrxgULAI2Gkw-MhpMPAaEV0DhovJNR1Kex52-Hsg==\"}",
+            "message-id": "<20261007100210.7cb9ad667e80e23c@cio54818.mail.apollo.io>"
+          },
+          "attributes": {
+            "uid": 6650
+          },
+          "date": "Wed, 07 Oct 2026 10:02:10 +0000",
+          "subject": "Spend less time clicking, more time selling 🚀",
+          "from": "Apollo Team <win@mail.apollo.io>",
+          "to": "verma980099@gmail.com"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "textHtml": "<!DOCTYPE>\r\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n\r\n<head>\r\n  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\r\n  <meta content=\"text/html; charset=Windows-1252\" />\r\n  <meta content=\"en-us\" />\r\n  <title></title>\r\n  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />\r\n  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />\r\n  <link\r\n    href=\"https://fonts.googleapis.com/css2?family=Anek+Latin:wght@100..800&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap\"\r\n    rel=\"stylesheet\" />\r\n</head>\r\n\r\n<body style=\"margin: 0; padding: 0\">\r\n<center><p align=center>\r\n  <font style=\"font-family: Verdana, Arial; font-size: 10px\">\r\n  If you are unable to view this message correctly,\r\n  <a href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e0&e=cDE9JTQwN2djclhMeVZuUFB3eU5OOGJzMWdvUFRpYktKNSUyQllsRkw5MFM2JTJGZTlvUTAlM0Q&s=njlnmMGC_vjGzKukqLkSQjtPOsRQnsSFLrZtPQ1M3OA\" _label=\"Mirror Page\" _type=\"mirrorPage\" >click here</a>\r\n  </font>\r\n</p></center>\r\n  <div align=\"center\">\r\n    <table width=\"648\" border=\"0\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\" bgcolor=\"\"\r\n      style=\"border: 1px solid #ccc\">\r\n      <tbody>\r\n       <tr>\r\n          <td align=\"center\">\r\n            <table width=\"650\" height=\"\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\">\r\n              <tbody>\r\n                <tr>\r\n                  <td align=\"left\" width=\"465\">\r\n                    <p style=\"margin:0px; padding: 0px;\"><img\r\n                        src=\"https://docs.nipponindiaim.com/images/nimf-logo.jpg\" alt=\"\" width=\"465\"\r\n                        height=\"82\" title=\"\" border=\"0\" style=\"display: flex;\"></p>\r\n                  </td>\r\n                  <td align=\"center\" width=\"185\" style=\"padding-right: 5px;\">\r\n                    <p\r\n                      style=\"color:#212121; font-family: 'Poppins', sans-serif;margin-bottom:2px; margin-top: 0px; padding: 0px; font-size: 12px; text-align: center;\">\r\n                      Preferred Partner:</p>\r\n                    <p style=\"margin:0px; padding: 0px;\"><img\r\n                        src=\"https://docs.nipponindiaim.com/images/Groww-Logo.jpg\" alt=\"\" width=\"175\"\r\n                        height=\"47\" title=\"\" border=\"0\" style=\"display: flex;\"></p>\r\n                  </td>\r\n                </tr>\r\n              </tbody>\r\n            </table>\r\n          </td>\r\n        </tr>\r\n         <tr>\r\n          <td width=\"650\" align=\"center\" valign=\"top\" bgcolor=\"#FFFFFF\">\r\n            <p style=\"margin: 0px; padding: 0px; display: block;\">\r\n              <img src=\"https://docs.nipponindiaim.com/images/morocco-cobranded-banner.gif\" alt=\"\" width=\"650\" height=\"\"\r\n                title=\"\" border=\"0\" style=\"display: block;\" />\r\n            </p>\r\n            <table width=\"650\" height=\"\" align=\"center\" cellpadding=\"0\" cellspacing=\"0\">\r\n              <tbody>\r\n\r\n\r\n                <tr>\r\n                  <td align=\"left\" >\r\n                     <p style=\"margin: 0px; padding: 0px; display: block;\">\r\n                      <img src=\"https://docs.nipponindiaim.com/images/morocco-cobranded-static-01.jpg\" alt=\"\" width=\"650\" height=\"\"\r\n                        title=\"\" border=\"0\" style=\"display: block;\"/>\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n\r\n                 <tr>\r\n                  <td align=\"center\" >\r\n                    <p style=\"\r\n                          margin-bottom: 0px;\r\n                          margin-top: 0;\r\n                          padding: 0px;\r\n                          display: block;\r\n                        \">\r\n                      <a href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e1\" target=\"_blank\" style=\"text-decoration: none;\" ><img src=\"https://docs.nipponindiaim.com/images/Australia-Scuba-cta_02.jpg\" alt=\"\" width=\"650\" height=\"\"\r\n                        title=\"\" border=\"0\" style=\"display: block;\" /></a>\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n                 <tr>\r\n                  <td align=\"left\" >\r\n                     <p style=\"margin: 0px; padding: 0px; display: block;\">\r\n                      <img src=\"https://docs.nipponindiaim.com/images/morocco-cobranded-static-02.jpg\" alt=\"\" width=\"650\" height=\"\"\r\n                        title=\"\" border=\"0\" style=\"display: block;\"/>\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n\r\n\r\n                <tr>\r\n                  <td align=\"center\" style=\"padding: 0px\">\r\n                    <p style=\"margin: 0; padding: 0px; display: block;\">\r\n                      <a href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e2\" target=\"_blank\" style=\"display: block;\" ><img src=\"https://docs.nipponindiaim.com/images/Australia-Scuba-06.jpg\" alt=\"\" title=\"\"\r\n                          width=\"650\" height=\"\" border=\"0\" style=\"display: block;\" />\r\n                      </a>\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n                <tr>\r\n                  <td align=\"left\" >\r\n                     <p style=\"margin: 0px; padding: 0px; display: block;\">\r\n                      <img src=\"https://docs.nipponindiaim.com/images/Australia_Scuba_05.jpg\" alt=\"\" width=\"650\" height=\"\"\r\n                        title=\"\" border=\"0\" usemap=\"#image-map\" style=\"display: block;\"/>\r\n                    </p>\r\n\r\n                    <map name=\"image-map\">\r\n                      <area target=\"_blank\" alt=\"\" title=\"\" href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e3\" coords=\"306,30,345,90\" shape=\"rect\"><area target=\"_blank\" alt=\"\" title=\"\" href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e4\" coords=\"348,33,385,88\" shape=\"0\"><area target=\"_blank\" alt=\"\" title=\"\" href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e5\" coords=\"389,32,421,91\" shape=\"0\"><area target=\"_blank\" alt=\"\" title=\"\" href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e6\" coords=\"425,30,466,92\" shape=\"0\"><area target=\"_blank\" alt=\"\" title=\"\" href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e7\" coords=\"471,29,511,91\" shape=\"0\"></map>\r\n                  </td>\r\n                </tr>\r\n\r\n              </tbody>\r\n            </table>\r\n          </td>\r\n        </tr>\r\n      </tbody>\r\n    </table>\r\n  </div>\r\n  <tr>\r\n<td height=\"25\" style=\"font-family:Arial, Helvetica, sans-serif, Helvetica, sans-serif, Helvetica, sans-serif; font-size:12px; text-align:left; line-height:15px; color:#000000\">\r\n<center>\r\n<font style=\"font-family: Verdana, Arial; font-size: 10px\"><p>\r\nYou are receiving this message because you have been in contact with Nippon Life India Asset Management Limited or an affiliate. To no longer receive messages from Nippon Life India Asset Management Limited\r\n<a href=\"https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,bd4e8&e=cDE9JTQwemdTemwyZGlQRU9HS1c2R1lsaGpSdyUzRCUzRA&s=s9bziG94P-aq9f4AdD7kjmWdHENq96jbna__h2GMl0Y\" _label=\"Opt-out link\" _type=\"optout\" >click here</a>.\r\n</p>\r\n</font>\r\n</center>\r\n</td>\r\n</tr>\r\n<img height='0' width='0' alt='' src='https://t2.campaign1.nipponindia.email/r/?id=h5cddd282,1da60d,1'/></body>\r\n\r\n</html>\r\n",
+          "textPlain": "----------------------------------------------------------------------------\r\nTo view this message in HTML format, click here:\r\n https://t2.campaign1.nipponindia.email/r/?id=t5cddd282,1da60d,bd4f0&e=cDE9JTQwN2djclhMeVZuUFB3eU5OOGJzMWdvQ2dzcUpWdGJXbk5iNXRObmNOYnZmSSUzRA&s=--rpog_kHOUMKM98XK3LPFS7NKCfP6wPtk9V_ucY2Go \r\nor paste this link in a Web browser\r\n----------------------------------------------------------------------------\r\n\r\n\t\r\nPreferred Partner: \r\n\r\n\t\r\n\t\r\n\r\n\t\r\n\r\n https://t2.campaign1.nipponindia.email/r/?id=t5cddd282,1da60d,bd4f1 \r\n\t\r\n\r\n\t\r\n\r\n https://t2.campaign1.nipponindia.email/r/?id=t5cddd282,1da60d,bd4f2 \r\n\t\r\n\r\n\t\r\n\t\r\n\r\nYou are receiving this message because you have been in contact with Nippon Life India Asset Management Limited or an affiliated company. To no longer receive messages from Nippon Life India Asset Management Limited\r\nclick here:\r\n https://t2.campaign1.nipponindia.email/r/?id=t5cddd282,1da60d,bd4f3&e=cDE9JTQwemdTemwyZGlQRU9HS1c2R1lsaGpSdyUzRCUzRA&s=ZQevfKFuHCXce_UJCF9i93PoZ-FI2Njw71qQAs1Uvkw \r\n",
+          "metadata": {
+            "delivered-to": "verma980099@gmail.com",
+            "received": "by 2002:a05:7000:3210:b0:8b4:9add:1d37 with SMTP id r16csp82069maf; Wed, 7 Oct 2026 04:21:41 -0700 (PDT)",
+            "x-received": "by 2002:a05:7022:1501:b0:14f:5cd:f286 with SMTP id a92af1059eb24-16206f0655bmr2241992c88.34.1791372101102; Wed, 07 Oct 2026 04:21:41 -0700 (PDT)",
+            "arc-seal": "i=1; a=rsa-sha256; t=1791372101; cv=none; d=google.com; s=arc-20260327; b=G4zu3j+F9UVBZtbmqk4OsujNoYnqH4t1c5CcV7rhSYGTrwjC2aqHcaplJDbNma4BhM t1D+CGrH8+lEK0xDRLccDlHYtzv18NEOa1S2ltIJx8nnf4SfDeok2gkUev/zV8fZY6ce TWEJjxdJnGoOjuy3w2EaIksvvnafJZZIavTiQTqrVULxSk63tXVTreRCoOMRtn/0CdI3 OVA73axdHyRFqYa/DuVOVbAhsHLg6/lBDqF7DRPE4TP3wuNytWVJZgSrYJljUQVmsCc/ Vmzyfoey+ChHVR3ZhfugGPmmVJqoscOpNIh6BDe0JxUeAwM/6hGBSX1f7+R09kH08qrq FEeQ==",
+            "arc-message-signature": "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327; h=message-id:mime-version:reply-to:to:date:from:subject :dkim-signature; bh=4b3UpU62qmcwT6Tp5ZtpEH+21BcOthHb0TQ7M8fHc9g=; fh=BgnkTzI1OvJpIkMzKNYvz6qhlTN/KZLnvoiRQY7VgNk=; b=m454cJiYOlkKYjDbm1akqRQJGu+rU3zBoxGD8hKt6BZt27C+TMJYJR/5LK+7UjspLa UzTLGathm5XgZ1+hJSlcorHr3kMc200ATFJWrWVUKZv3avzdJTU4VP9L8+kWquRthsm5 hEQGYbgyzKkwlixK7pqActxW4JHNYOVP7wCb8NUjtWZnEs3jSLkPInsqHYeJpq3ttPHJ 63TS983nqt7mhS+7qtzplIvyK2BqfJ125XjN0huiY6uK0dZMJV+8+9P+b4WLyjDjCHfG zhij7RsKyoBraKwHt4hZpqO9CQY8QegsaM5C3gMojE8bQgdQqkYeB3+GnSecMd3/Ywe4 EISw==; dara=google.com",
+            "arc-authentication-results": "i=1; mx.google.com; dkim=pass header.i=@campaign1.nipponindia.email header.s=nipponlifeindiaassetmanagement header.b=fyLFL2D4; spf=pass (google.com: domain of bounce@campaign1.nipponindia.email designates 172.82.242.24 as permitted sender) smtp.mailfrom=bounce@campaign1.nipponindia.email; dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=campaign1.nipponindia.email",
+            "return-path": "<bounce@campaign1.nipponindia.email>",
+            "received-spf": "pass (google.com: domain of bounce@campaign1.nipponindia.email designates 172.82.242.24 as permitted sender) client-ip=172.82.242.24;",
+            "authentication-results": "mx.google.com; dkim=pass header.i=@campaign1.nipponindia.email header.s=nipponlifeindiaassetmanagement header.b=fyLFL2D4; spf=pass (google.com: domain of bounce@campaign1.nipponindia.email designates 172.82.242.24 as permitted sender) smtp.mailfrom=bounce@campaign1.nipponindia.email; dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=campaign1.nipponindia.email",
+            "x-kumoref": "eyJfQF8iOiJcXF8vIiwicmVjaXBpZW50IjoidmVybWE5ODAwOTlAZ21haWwuY29tIn0=",
+            "dkim-signature": "v=1; a=rsa-sha256; d=campaign1.nipponindia.email; s=nipponlifeindiaassetmanagement; c=relaxed/relaxed; bh=4b3UpU62qmcwT6Tp5ZtpEH+21BcOthHb0TQ7M8fHc9g=; h=from:to:message-id:date:subject:content-type:mime-version: list-unsubscribe:list-unsubscribe-post; t=1791371925; b=fyLFL2D4ph4ZaSVk99sKGRhINOHEceLwWxHmfCKez4Q87A7UgdZJTyFfOd1CybERcBqqndw3M JH8TpQ+TbeqHrmjydDEj7vWpYEPiHc6n0MBqM/iKiFLnr9dQyobmRgqOMV2qWe5QZIAkDv9gGFr F6/hI+g1clTLKpTs9Fhf1Fx8rBvJ88FXarpjT2WrJV8cqJX4iRl+CNvuT0P4Y7JtYSTL63K2cbM OB0MjpNmIniklifRRkUFGc/puEOU782kRmJ3zRW/Wh0VHX8dkH9W7U30bPCljyr8sCogI3s0l4g YqY3Od14/gXDIw+bVwVWqBAN5RRPMJHnTf72ZQGU3JvQ==;",
+            "reply-to": "\"Nippon Life India Asset Management Limited\" <no-reply@campaign1.nipponindia.email>",
+            "mime-version": "1.0",
+            "x-mailer": "nlserver, Build 8.9.3",
+            "message-id": "<NM65805D8830140520Enipponlifeindiaassetmanagement_mid_prod2@campaign1.nipponindia.email>",
+            "content-type": "multipart/alternative; charset=\"windows-1252\"; boundary=\"----=_NextPart_630_6730AF6B.6730AF6B\""
+          },
+          "attributes": {
+            "uid": 6651
+          },
+          "subject": "Your next destination starts with a plan. 🌍 Start a SIP for your travel dreams!",
+          "from": "\"Nippon Life India Asset Management Limited\" <nimfupdates@campaign1.nipponindia.email>",
+          "date": "Wed, 07 Oct 2026 16:48:45 +0530",
+          "to": "<verma980099@gmail.com>"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "textHtml": "<html><body><div dir=\"auto\">Hello,<br><br>My name is Sarah Mitchell and I recently moved to the area, so I&#39;m looking for a new dentist for myself and my 8-year-old son.<br><br>I have a few quick questions:<br><br>1. Do you accept Delta Dental PPO? It&#39;s through my employer.<br>2. Do you see children as well as adults?<br>3. Would it be possible to book cleanings for both of us next Tuesday afternoon, ideally after 3 pm?<br><br>Also, is there anything we should bring to our first visit?<br><br>Thank you so much, and I look forward to hearing from you.<br><br>Best regards,<br>Sarah Mitchell<br>(512) 555-0193</div></body></html>\r\n",
+          "textPlain": "Hello,\r\n\r\nMy name is Sarah Mitchell and I recently moved to the area, so I'm looking\r\nfor a new dentist for myself and my 8-year-old son.\r\n\r\nI have a few quick questions:\r\n\r\n1. Do you accept Delta Dental PPO? It's through my employer.\r\n2. Do you see children as well as adults?\r\n3. Would it be possible to book cleanings for both of us next Tuesday\r\nafternoon, ideally after 3 pm?\r\n\r\nAlso, is there anything we should bring to our first visit?\r\n\r\nThank you so much, and I look forward to hearing from you.\r\n\r\nBest regards,\r\nSarah Mitchell\r\n(512) 555-0193\r\n",
+          "metadata": {
+            "delivered-to": "verma980099@gmail.com",
+            "received": "by 2002:a05:7000:3210:b0:8b4:9add:1d37 with SMTP id r16csp142699maf; Wed, 7 Oct 2026 05:14:19 -0700 (PDT)",
+            "x-received": "by 2002:a05:6808:1585:b0:4f8:4a95:9b3b with SMTP id 5614622812f47-4fc481c5f12mr2180227b6e.68.1791375259075; Wed, 07 Oct 2026 05:14:19 -0700 (PDT)",
+            "arc-seal": "i=2; a=rsa-sha256; t=1791375259; cv=pass; d=google.com; s=arc-20260327; b=mjSolkvD9E8rEWCtpIRqmXWyD2xjWkMIoa7DRolcG9EO1/QJrrs23NeoIqWWIxznsu lzzijEB5lLXCZr4l8Cqzlp1vC8o+fUNYYwdZb9cFS/MxcVlYFjlMW+yW7ghTuh5Y4+tV Rr1hszTKgSCazHvuWqQq0qRX3NRSDQDuhGNxIdda+7gajbM+DbVXfNMcT8sYZQCU7wtL Q+7TIC0Ep8OYtK5boWWN9Z/5EtTy8vwTbrhrj4j66bvvl9ZkT4exw4G13tCKv60FGHTE 1w3vhhSJ2Fi7VNEcXeX4YoB/iorxoRPLSfUhuAdJgApi5HYFTwU8HmmZxgrEvapr4lih SDVw==",
+            "arc-message-signature": "i=2; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20260327; h=to:subject:message-id:date:from:mime-version:dkim-signature; bh=r6N/0VZ3yBHi469BGq1gK+I0y/HUKeCNQcGfeMRWRVc=; fh=tCd68d1mes2j+lyHFBl2jNEDPHo8uIvTIZZp6C6/LIU=; b=QGv0FsOqQa3R18VTGQ0bfEtYJ/4giPol+AQ7buZjpLJghSZr9V5jpyf6SonM1r5A5O rsJAqOu0iA2OKJDR5+bedW1YhS1mpv1ozUA2fuTc7QF7qOGBDCT2B2Ri06kI0a8+f4Jx 1ft+YSevjKpWiGgrQIoxRY9QDs6qW1ryARyGU7MAWUK+K1mIfMvoKSITot3015+u0bZy 2Ksp9M8KgpCA3C16jGm5iengwQRXn4R07Dn4tbCBNBuA7qWJihEjK4GqcSFrb4HXn4Db Vz+CIdzIS4u8gQgdx/m0iODn93xaN+4wZBkuGUWu92wJvqnyV50wrLLJ7dJheDKiShnI Jpiw==; dara=google.com",
+            "arc-authentication-results": "i=2; mx.google.com; dkim=pass header.i=@gmail.com header.s=20251104 header.b=CnC3Ttvk; arc=pass (i=1); spf=pass (google.com: domain of rk7215967@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=rk7215967@gmail.com; dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com; dara=pass header.i=@gmail.com",
+            "return-path": "<rk7215967@gmail.com>",
+            "received-spf": "pass (google.com: domain of rk7215967@gmail.com designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;",
+            "authentication-results": "mx.google.com; dkim=pass header.i=@gmail.com header.s=20251104 header.b=CnC3Ttvk; arc=pass (i=1); spf=pass (google.com: domain of rk7215967@gmail.com designates 209.85.220.41 as permitted sender) smtp.mailfrom=rk7215967@gmail.com; dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=gmail.com; dara=pass header.i=@gmail.com",
+            "dkim-signature": "v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmail.com; s=20251104; t=1791375258; x=1791980058; dara=google.com; h=content-type:to:subject:message-id:date:from:mime-version:from:to :cc:subject:date:message-id:reply-to:content-type; bh=r6N/0VZ3yBHi469BGq1gK+I0y/HUKeCNQcGfeMRWRVc=; b=CnC3Ttvkia/R7ksDdVjSvU8+L63xLFMVzC/YcWMCSqYDLo6mDyEtgs55okNnDuWJFf /AnFyz7ojgxxUZWA4m+FFskicgkOUMY4KQE7yiAL2DSwqw+zedpDEAcSuVv0/dwXRO1e AS4Rc42ZmzdJuiUnIPYtuEOmmFg5e7FJeuA4RwoLtnBnsDOcmnqFDHrAmdbGe6wY4D/c ywfZz50umicA1Y39ngEfyudjqaZ9USKwmZhmk/4akrBNx60AJaOJiz7dSTO+fWlTJoJo y8tdvtUrtUHvWx7NWBnHEz3s2vU4vIyDC79oPKmiWkW7pcgmhpPMkNRd6ixMP9959P4L 87hQ==",
+            "x-google-dkim-signature": "v=1; a=rsa-sha256; c=relaxed/relaxed; d=1e100.net; s=20260707; t=1791375258; x=1791980058; h=content-type:to:subject:message-id:date:from:mime-version:x-gm-gg :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to :content-type; bh=r6N/0VZ3yBHi469BGq1gK+I0y/HUKeCNQcGfeMRWRVc=; b=QWBflUfQm3HEn5ka5QGB+V2qDj91azHNnLdekF73EpTN80S+m4Rayujz93f5MQUUZV h1JSfwWa3roDvFsap6rSXssEf2O3BWgXFid5Vkme8o3674gQqzSK1ETWqJL4fNiG2NwZ 8UQsgXOccS4kftGSK4g7XBhJFgCVgHwKWHsJi/xMmX7JMgIOOEhmzg+tV6kbmzolS4A/ jcAkc/dDeosww6lIZWenw63iBej2Ng9cOfSkOB6V34D19CAPGbSaV0QoWR+a8Hxx/TFn voYdm0e45lymDgp3dB7vqSZpHlGz3tYQkrAo7QRXpXoqoZYevlz1wPD2YufGmcNHNElO st+w==",
+            "x-gm-message-state": "AFuF++lTlCcnHhxYRCq6FsOeS4na5rFt9rPSYmZjVtM8/s0EieFtIQ/g yHFE72piv2sjOvmRXB4G7pMk+xfNxW6BNC1aGuAECPD2oF+weaDc3LOw7ph3g1q/mouKrkpydKn TP1eEDKz0rHRbqNJGAmNCriP8ZAskVEV+dw==",
+            "x-gm-gg": "AYBFou1N6LBWp2xVKZRWiFXCtETKkEf0tMN6lLG79Q6c6XqAJRNuODjH7nmxT8P/e4a a+30gXMvKKQ8jAz5kjhpqDs1qwP5gMAlUmDefTpThHpdIgEGfojvMFYM1tO3/JBWeRpkCGbmgL5 LTL5lfFaa9Lqxr2SqNLwPHzUz1ybayi8tY6UurP6se6pIqxBVqKCnNxOpkpY2kjAx4o61DTQjkl Ugo/mUYGbrNU9JdIhlAcgnYwtcs3eWwV7ncxSz0YPti9iO22VKtUZ1ijJkCO6sZG/QitEh6yiP6 19BWOCcEdpuxqx/1hGzyh1eZ9xyISAyJp4Ge9US24fUzSUuQ3f8ZN6hcohaW+L74qpBQPG/fPEs qmy1+6eY=",
+            "mime-version": "1.0",
+            "x-gm-features": "AclHuK9sKWhCEeoPLONkFt5YBNeH1bd6meTxWA2gApFVQPQNfEjB7Ox4ScWABHo",
+            "message-id": "<CAOjb9hQE7_N69bE3_aDx7ODPNX6uL3TefxOTVo5jySzb_ABcRA@mail.gmail.com>",
+            "content-type": "multipart/alternative; boundary=\"000000000000f21924065d3f0d8c\""
+          },
+          "attributes": {
+            "uid": 6652
+          },
+          "from": "Rohit Kumar <rk7215967@gmail.com>",
+          "date": "Wed, 7 Oct 2026 07:14:18 -0500",
+          "subject": "New patient - insurance and cleaning appointment",
+          "to": "verma980099@gmail.com"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Email Trigger (IMAP)": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "4fbdaae5-8ca1-460f-97c4-ec0d4e30b80e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d1029da17e057da569d76e3ce5984350d12a87eddce6bbe06cfe3c57df61937c"
+  },
+  "nodeGroups": [],
+  "id": "tXPV3B7r5RA8h0Vr",
+  "tags": []
+}
